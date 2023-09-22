@@ -3,6 +3,7 @@ extends Node
 class_name CharacterStateMachine
 
 @export var character : CharacterBody2D
+@export var animation_tree : AnimationTree
 @export var current_state : State
 
 var states : Array[State]
@@ -14,13 +15,25 @@ func _ready():
 			
 			# Set the states up with what they need to function
 			child.character = character
+			child.playback = animation_tree.get("parameters/playback")
 			
+			# Connect to interrupt signal
+			child.connect("interrupt_state", on_state_interrupt_state)
 		else:
 			push_warning("Child " + child.name + " is not a State for CharacterStateMachine !")
 
-func _physics_process(delta):
+func _input(event : InputEvent):
+	current_state.state_input(event)
+
+func _process(delta):
+	current_state.state_process(delta)
+
+func _physics_process(_delta):
 	if(current_state.next_state != null):
 		switch_state(current_state.next_state)
+
+func on_state_interrupt_state(new_state : State):
+	switch_state(new_state)
 
 func switch_state(new_state : State):
 	if(current_state != null):
@@ -32,6 +45,3 @@ func switch_state(new_state : State):
 
 func can_move() -> bool:
 	return current_state.can_move
-
-func _input(event : InputEvent):
-	current_state.state_input(event)
